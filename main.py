@@ -2,7 +2,11 @@
 import os
 from gmail import get_latest_message, extract_info, download_attachments
 from gcal import create_calendar_event
+from text_message import send_text
 from authentication import authenticate
+from flask import Flask
+
+app = Flask(__name__)
 
 def get_message_and_add_downloads():
     # write the main function
@@ -26,10 +30,12 @@ def add_event_to_calendar(message):
     event = create_calendar_event(service, message)
     return event
 
-# run the main function
-if __name__ == "__main__":
-    # when email is sent get message and downloads
+# run the app route for the webhook
+@app.route('/webhook')
+def process_incoming_email():
     message = get_message_and_add_downloads()
+    add_event_to_calendar(message)
+    send_text(message)
 
-    # add the event to calendar if it is valid as well
-    event = add_event_to_calendar(message)
+if __name__ == "__main__":
+    app.run(port=5000)
