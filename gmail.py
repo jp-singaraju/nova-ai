@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import os
 import base64
 import email
-from gmail_api import authenticate
 
 # load env vars
 load_dotenv()
@@ -16,12 +15,12 @@ def get_latest_message(service, user_id):
     messages = service.users().messages().list(userId=user_id, maxResults=1, q="is:inbox").execute()
     if 'messages' in messages:
         latest_msg_id = messages['messages'][0]['id']
-        return get_message(service, user_id, latest_msg_id)
+        return get_message_info(service, user_id, latest_msg_id)
     else:
         print("No messages found.")
         return None
 
-def get_message(service, user_id, msg_id):
+def get_message_info(service, user_id, msg_id):
     # extract email details
     message = service.users().messages().get(userId=user_id, id=msg_id, format='raw').execute()
     msg_str = base64.urlsafe_b64decode(message['raw'].encode("utf-8")).decode("utf-8")
@@ -70,6 +69,7 @@ def download_attachments(service, user_id, msg_id, store_dir):
             path = os.path.join(store_dir, part['filename'])
             with open(path, 'wb') as f:
                 f.write(file_data)
+    print("DOWNLOADS RETRIEVED.")
 
 def extract_info(data):
     # extract info using gpt model
@@ -81,22 +81,5 @@ def extract_info(data):
         ],
     )
     extracted_info = response.choices[0].message.content
+    print("MESSAGE RETRIEVED.")
     return json.loads(extracted_info)
-
-def main():
-    # write the main function
-    store_dir = "./attachments/"
-    os.makedirs(store_dir, exist_ok=True)
-
-    # authenticate to google api
-    service = authenticate()
-    latest_email = get_latest_message(service, 'me')
-    extracted_info = extract_info(latest_email)
-
-    # if there are attachments, download them
-    if latest_email.get("attachments"):
-        msg_id = latest_email["id"]
-        download_attachments(service, 'me', msg_id, store_dir)
-
-    # return the extracted_info
-    return extracted_info
