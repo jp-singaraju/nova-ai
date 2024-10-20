@@ -15,7 +15,7 @@ def parse_message(message):
     response = openai.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=[
-                {"role": "system", "content": f"You are an assistant that analyzes conversations between two people about a third person. Your task is to extract a valid phone number in the format +XXXXXXXXXXX (e.g., +12145067234) from the conversation, analyze the discussion to understand key points about the third person, and synthesize this information into a concise message directed to the third person (the phone number owner). If both a valid phone number and relevant information are present, return a JSON object with phone_number and message keys. The message should be written as if coming from the recipient of the original conversation, addressing the third person directly about the discussed topic. Include the recipient's name if mentioned. Return null if either the phone number or relevant information is missing. Ignore conversation parts unrelated to the third person or the extracted number. For example: {example_conversation}."},
+                {"role": "system", "content": f"You are an assistant that analyzes conversations between two people about a third person. Your task is to extract a valid phone number in the format +XXXXXXXXXXX (e.g., +12145067234) from the conversation, analyze the discussion to understand key points about the third person, and synthesize this information into a concise message directed to the third person (the phone number owner). If both a valid phone number and relevant information are present, return a JSON object with phone_number and message keys. The message should be written as if coming from the recipient of the original conversation, addressing the third person directly about the discussed topic. Include the recipient's name if mentioned. Make sure to return null if either the phone number or relevant information is missing. Ignore conversation parts unrelated to the third person or the extracted number. For example: {example_conversation}."},
                 {"role": "user", "content": f"Extract the phone number and message content from this text: {message}"}
             ],
         response_format={"type": "json_object"}
@@ -32,6 +32,7 @@ def send_text(message):
 
     # parse the message
     parsed_data = parse_message(message)
+    print(parsed_data)
     if parsed_data.lower() == "null":
         print("NO TEXT MESSAGE SENT.")
         return

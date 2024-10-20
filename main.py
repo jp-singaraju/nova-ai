@@ -36,6 +36,7 @@ def process_incoming_email():
     message = get_message_and_add_downloads()
     add_event_to_calendar(message)
     send_text(message)
+    return
 
 if __name__ == "__main__":
     app.run(port=5000)
