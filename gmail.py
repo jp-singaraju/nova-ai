@@ -60,16 +60,30 @@ def extract_attachments(fin_msg):
     return attachments
 
 def download_attachments(service, user_id, msg_id, store_dir):
-    # save the attachments locally
+    # call it on the message
     message = service.users().messages().get(userId=user_id, id=msg_id).execute()
-    for part in message['payload']['parts']:
-        if part['filename'] and part['body'] and part['body']['attachmentId']:
-            attachment = service.users().messages().attachments().get(id=part['body']['attachmentId'], userId=user_id, messageId=msg_id).execute()
-            file_data = base64.urlsafe_b64decode(attachment['data'].encode('utf-8'))
+    parts = message['payload'].get('parts', [message['payload']])
+
+    # process each part
+    def process_part(part):
+        if part.get('filename') and 'body' in part:
+            if part['body'].get('attachmentId'):
+                attachment = service.users().messages().attachments().get(userId=user_id, messageId=msg_id, id=part['body']['attachmentId']).execute()
+                file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+            elif part['body'].get('data'):
+                file_data = base64.urlsafe_b64decode(part['body']['data'].encode('UTF-8'))
+            else:
+                return
             path = os.path.join(store_dir, part['filename'])
             with open(path, 'wb') as f:
                 f.write(file_data)
-    print("DOWNLOADS RETRIEVED.")
+    
+    # iterate through all parts
+    for part in parts:
+        process_part(part)
+        for subpart in part.get('parts', []):
+            process_part(subpart)
+    print(f"DOWNLOADS RECEIVED.")
 
 def extract_info(data):
     # extract info using gpt model
